@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>Gemini Chat</title>
+<style>
+:root{--bg:#0f0f1a;--surface:#1a1a2e;--surface2:#16213e;--border:#2a2a4a;--accent:#8b5cf6;--accent2:#06b6d4;--green:#10b981;--text:#e2e8f0;--muted:#94a3b8;--bot-bg:#1e1e3a}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:-apple-system,'Segoe UI',sans-serif}
+#app{position:fixed;inset:0;display:flex;flex-direction:column}
+
+/* HEADER */
+.hdr{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 14px;display:flex;align-items:center;gap:10px;flex-shrink:0}
+.av{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.hi{flex:1}
+.hn{font-size:16px;font-weight:800;background:linear-gradient(135deg,#a78bfa,#22d3ee);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hs{font-size:11px;color:var(--green);display:flex;align-items:center;gap:4px;margin-top:1px}
+.sd{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.clr{background:none;border:none;color:var(--muted);font-size:17px;cursor:pointer;padding:6px;border-radius:8px}
+
+/* PERSONA BAR */
+.pbar{background:var(--surface2);border-bottom:1px solid var(--border);padding:7px 10px;display:flex;gap:6px;overflow-x:auto;flex-shrink:0;-webkit-overflow-scrolling:touch}
+.pbar::-webkit-scrollbar{display:none}
+.pc{background:var(--bg);border:1.5px solid var(--border);border-radius:20px;padding:5px 12px;font-size:12px;color:var(--muted);cursor:pointer;white-space:nowrap;transition:.2s;flex-shrink:0}
+.pc.on{border-color:var(--accent);color:#fff;background:rgba(139,92,246,.2)}
+
+/* MODEL BAR */
+.mbar{background:var(--bg);border-bottom:1px solid var(--border);padding:5px 10px;display:flex;gap:5px;overflow-x:auto;flex-shrink:0;align-items:center}
+.mbar::-webkit-scrollbar{display:none}
+.ml{font-size:10px;color:var(--muted);white-space:nowrap;flex-shrink:0;margin-right:2px}
+.mc{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:3px 10px;font-size:11px;color:var(--muted);cursor:pointer;white-space:nowrap;flex-shrink:0;transition:.2s}
+.mc.on{border-color:var(--accent2);color:var(--accent2);background:rgba(6,182,212,.1)}
+
+/* MESSAGES */
+#msgs{flex:1;overflow-y:auto;padding:14px 10px;display:flex;flex-direction:column;gap:12px;-webkit-overflow-scrolling:touch}
+#msgs::-webkit-scrollbar{width:3px}
+#msgs::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.msg{display:flex;gap:8px;animation:mi .2s ease}
+@keyframes mi{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.msg.u{flex-direction:row-reverse}
+.mav{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;align-self:flex-end}
+.msg.b .mav{background:linear-gradient(135deg,var(--accent),var(--accent2))}
+.msg.u .mav{background:linear-gradient(135deg,#7c3aed,#2563eb)}
+.bbl{max-width:82%;padding:11px 14px;border-radius:18px;font-size:14px;line-height:1.65;word-break:break-word;position:relative}
+.msg.b .bbl{background:var(--bot-bg);border:1px solid var(--border);border-bottom-left-radius:5px}
+.msg.u .bbl{background:linear-gradient(135deg,#7c3aed,#2563eb);border-bottom-right-radius:5px;color:#fff}
+.bt{font-size:10px;color:rgba(255,255,255,.3);margin-top:5px;display:block;text-align:right}
+.msg.b .bt{color:var(--muted);text-align:left}
+.cpb{background:rgba(139,92,246,.2);border:none;border-radius:6px;color:var(--muted);font-size:10px;padding:3px 8px;cursor:pointer;margin-top:5px;display:inline-block}
+
+/* Typing */
+.td{display:flex;gap:5px;padding:3px 0;align-items:center}
+.td span{width:7px;height:7px;border-radius:50%;background:var(--muted);animation:dt .9s infinite}
+.td span:nth-child(2){animation-delay:.2s}
+.td span:nth-child(3){animation-delay:.4s}
+@keyframes dt{0%,80%,100%{transform:scale(1);opacity:.4}40%{transform:scale(1.35);opacity:1}}
+
+/* Markdown */
+.bbl pre{background:#06060f;border:1px solid var(--border);border-radius:8px;padding:10px;overflow-x:auto;margin:7px 0;font-size:12px;font-family:'Courier New',monospace;-webkit-overflow-scrolling:touch}
+.bbl code{font-family:'Courier New',monospace;font-size:12px;background:rgba(139,92,246,.15);padding:2px 5px;border-radius:3px}
+.bbl h3{font-size:14px;font-weight:700;margin:8px 0 3px;color:#a78bfa}
+.bbl ul,.bbl ol{padding-left:18px;margin:5px 0}
+.bbl li{margin:2px 0}
+.bbl strong{font-weight:700}
+.bbl hr{border:none;border-top:1px solid var(--border);margin:7px 0}
+
+/* Welcome */
+.wc{text-align:center;padding:20px 10px;color:var(--muted)}
+.wc .wi{font-size:52px;display:block;margin-bottom:10px;animation:fl 3s ease-in-out infinite}
+@keyframes fl{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.wc h3{font-size:17px;font-weight:800;color:var(--text);margin-bottom:6px}
+.wc p{font-size:13px;line-height:1.6;margin-bottom:14px}
+.sugs{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.sg{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px;text-align:left;cursor:pointer;transition:.15s;display:flex;flex-direction:column;gap:2px}
+.sg:active{background:var(--border)}
+.sg .si{font-size:18px}
+.sg b{font-size:12px;color:var(--text)}
+.sg span{font-size:11px;color:var(--muted)}
+
+/* Input */
+.iw{background:var(--surface);border-top:1px solid var(--border);padding:10px 12px;flex-shrink:0}
+.ir{display:flex;gap:8px;align-items:flex-end}
+.ib{flex:1;background:var(--bg);border:1.5px solid var(--border);border-radius:22px;padding:11px 16px;color:var(--text);font-size:14px;outline:none;resize:none;max-height:110px;min-height:44px;font-family:inherit;line-height:1.5;transition:.2s;-webkit-appearance:none}
+.ib:focus{border-color:var(--accent)}
+.ib::placeholder{color:var(--border)}
+.sb{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;color:#fff;font-size:18px;cursor:pointer;transition:.2s;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.sb:active{transform:scale(.9)}
+.sb:disabled{background:var(--border);cursor:not-allowed}
+
+/* Toast */
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#ef4444;color:#fff;padding:9px 18px;border-radius:12px;font-size:13px;z-index:999;display:none;max-width:88%;text-align:center}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div class="hdr">
+    <div class="av">✨</div>
+    <div class="hi">
+      <div class="hn">Gemini AI</div>
+      <div class="hs"><div class="sd"></div><span id="st">Tayyor</span></div>
+    </div>
+    <button class="clr" onclick="clearChat()">🗑</button>
+  </div>
+
+  <div class="pbar" id="pb">
+    <div class="pc on" onclick="selP(this,`Siz foydali, aqlli va do'stona AI yordamchisisiz. O'zbek tilida qisqa va aniq javob bering.`)">🤖 Yordamchi</div>
+    <div class="pc" onclick="selP(this,`Siz tajribali dasturchi va texnik ekspertsiz. Kodlarni to'liq va ishlaydigon qilib yozing. O'zbek tilida javob bering.`)">👨‍💻 Dasturchi</div>
+    <div class="pc" onclick="selP(this,`Siz ijodiy yozuvchi va shoirsiz. Ijodiy matnlar, hikoyalar va she'rlar yozing. O'zbek tilida chiroyli javob bering.`)">✍️ Ijodkor</div>
+    <div class="pc" onclick="selP(this,`Siz o'qituvchi va murabbiy siz. Har qanday mavzuni oddiy va tushunarli tarzda tushuntiring. O'zbek tilida javob bering.`)">🎓 O'qituvchi</div>
+    <div class="pc" onclick="selP(this,`Siz professional tarjimon siz. Berilgan matnni so'ralgan tilga aniq va tabiiy tarjima qiling.`)">🌐 Tarjimon</div>
+    <div class="pc" onclick="selP(this,`Siz sog'liq bo'yicha maslahatchi siz. Umumiy sog'liq va tibbiyot masalalari bo'yicha foydali maslahat bering. O'zbek tilida javob bering.`)">🏥 Tibbiyot</div>
+    <div class="pc" onclick="selP(this,`Siz moliyaviy maslahatchi siz. Investitsiya, tejash va moliya bo'yicha foydali maslahat bering. O'zbek tilida javob bering.`)">💰 Moliya</div>
+    <div class="pc" onclick="selP(this,`Siz oshpaz siz. Mazali taomlar retseptlarini batafsil yozing. O'zbek tilida javob bering.`)">🍳 Oshpaz</div>
+  </div>
+
+  <div class="mbar">
+    <div class="ml">Model:</div>
+    <div class="mc on" onclick="selM(this,'gemini-2.0-flash')">⚡ Flash 2.0</div>
+    <div class="mc" onclick="selM(this,'gemini-1.5-flash')">🔥 Flash 1.5</div>
+    <div class="mc" onclick="selM(this,'gemini-1.5-pro')">💎 Pro 1.5</div>
+    <div class="mc" onclick="selM(this,'gemini-2.0-flash-thinking-exp')">🧠 Thinking</div>
+  </div>
+
+  <div id="msgs">
+    <div class="wc" id="wc">
+      <span class="wi">✨</span>
+      <h3>Gemini AI ga Xush Kelibsiz!</h3>
+      <p>Istalgan savolingizni bering — bepul va cheksiz!</p>
+      <div class="sugs">
+        <div class="sg" onclick="doSug(`Sun'iy intellekt (AI) nima va u qanday ishlaydi?`)"><span class="si">💡</span><b>Sun'iy intellekt</b><span>AI nima va qanday ishlaydi?</span></div>
+        <div class="sg" onclick="doSug(`Python dasturlashni boshlash uchun asosiy tushunchalarni o'rgat`)"><span class="si">🐍</span><b>Python o'rgan</b><span>Dasturlash asoslarini o'rgat</span></div>
+        <div class="sg" onclick="doSug(`Professional resume yozishga yordam ber, namuna ko'rsat`)"><span class="si">📝</span><b>Resume yoz</b><span>Professional resume yozishga yordam ber</span></div>
+        <div class="sg" onclick="doSug(`O'zbekiston tarixi, madaniyati va diqqatga sazovor joylari haqida qiziqarli ma'lumot ber`)"><span class="si">🌍</span><b>O'zbekiston</b><span>Tarixi va madaniyati haqida</span></div>
+        <div class="sg" onclick="doSug(`Uyda oson tayyorlanadigan mazali taom retseptini ber`)"><span class="si">🍕</span><b>Taom retsepti</b><span>Uyda tayyorlanadigan mazali taom</span></div>
+        <div class="sg" onclick="doSug(`Meni hayotda oldinga intilishim uchun kuchli motivatsiya ber`)"><span class="si">💪</span><b>Motivatsiya</b><span>Kuchli motivatsiya olish uchun</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="iw">
+    <div class="ir">
+      <textarea class="ib" id="inp" placeholder="Xabar yozing..." rows="1"
+        onkeydown="onK(event)" oninput="rsz(this)"></textarea>
+      <button class="sb" id="sbtn" onclick="send()">➤</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const KEY = 'AIzaSyCzxWqeyyARJ3P_tAGkIIM1ETmi2ZjNGhE';
+let MODEL = 'gemini-2.0-flash';
+let PERSONA = "Siz foydali, aqlli va do'stona AI yordamchisisiz. O'zbek tilida qisqa va aniq javob bering.";
+let hist = [], busy = false;
+
+function selP(el, p) {
+  document.querySelectorAll('.pc').forEach(c => c.classList.remove('on'));
+  el.classList.add('on'); PERSONA = p;
+}
+function selM(el, m) {
+  document.querySelectorAll('.mc').forEach(c => c.classList.remove('on'));
+  el.classList.add('on'); MODEL = m;
+}
+
+function doSug(txt) {
+  document.getElementById('inp').value = txt;
+  send();
+}
+function onK(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }
+function rsz(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 110) + 'px'; }
+function tnow() { return new Date().toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' }); }
+
+function clearChat() {
+  hist = [];
+  const m = document.getElementById('msgs'); m.innerHTML = '';
+  const d = document.createElement('div'); d.className = 'wc'; d.id = 'wc';
+  d.innerHTML = '<span class="wi">✨</span><h3>Suhbat tozalandi</h3><p>Yangi savol bering!</p>';
+  m.appendChild(d);
+}
+
+function addMsg(role, text) {
+  const wc = document.getElementById('wc'); if (wc) wc.remove();
+  const msgs = document.getElementById('msgs');
+  const d = document.createElement('div');
+  d.className = 'msg ' + (role === 'bot' ? 'b' : 'u');
+  if (role === 'bot') {
+    d.innerHTML = `<div class="mav">✨</div><div class="bbl"><div class="btxt">${md(text)}</div><span class="bt">${tnow()}</span><button class="cpb" onclick="cpMsg(this)">📋 Nusxa</button></div>`;
+  } else {
+    d.innerHTML = `<div class="mav">👤</div><div class="bbl"><div class="btxt">${esc(text)}</div><span class="bt">${tnow()}</span></div>`;
+  }
+  msgs.appendChild(d); msgs.scrollTop = msgs.scrollHeight;
+}
+
+function addTyp() {
+  const wc = document.getElementById('wc'); if (wc) wc.remove();
+  const msgs = document.getElementById('msgs');
+  const d = document.createElement('div'); d.className = 'msg b'; d.id = 'typ';
+  d.innerHTML = `<div class="mav">✨</div><div class="bbl"><div class="td"><span></span><span></span><span></span></div></div>`;
+  msgs.appendChild(d); msgs.scrollTop = msgs.scrollHeight;
+}
+function rmTyp() { const e = document.getElementById('typ'); if (e) e.remove(); }
+
+function cpMsg(btn) {
+  const t = btn.previousElementSibling.previousElementSibling.innerText;
+  navigator.clipboard.writeText(t).then(() => { btn.textContent = '✅ Nusxalandi'; setTimeout(() => btn.textContent = '📋 Nusxa', 2000); }).catch(() => {});
+}
+
+function esc(t) { return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function md(t) {
+  let s = esc(t);
+  s = s.replace(/```(\w*)\n?([\s\S]*?)```/g, (_, l, c) => `<pre><code>${c.trim()}</code></pre>`);
+  s = s.replace(/`([^`]+)`/g, '<code>$1</code>');
+  s = s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  s = s.replace(/\*(.+?)\*/g, '<em>$1</em>');
+  s = s.replace(/^#{1,3}\s(.+)$/gm, '<h3>$1</h3>');
+  s = s.replace(/^[-*]\s(.+)$/gm, '<li>$1</li>');
+  s = s.replace(/^\d+\.\s(.+)$/gm, '<li>$1</li>');
+  s = s.replace(/---/g, '<hr>');
+  s = s.replace(/\n\n/g, '<p></p>');
+  s = s.replace(/\n/g, '<br>');
+  return s;
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.style.display = 'block';
+  clearTimeout(t._t); t._t = setTimeout(() => t.style.display = 'none', 3500);
+}
+
+async function send() {
+  if (busy) return;
+  const inp = document.getElementById('inp');
+  const text = inp.value.trim(); if (!text) return;
+  inp.value = ''; inp.style.height = 'auto';
+
+  addMsg('user', text);
+  hist.push({ role: 'user', parts: [{ text }] });
+  busy = true;
+  document.getElementById('sbtn').disabled = true;
+  document.getElementById('st').textContent = 'Yozmoqda...';
+  addTyp();
+
+  try {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${KEY}`;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        system_instruction: { parts: [{ text: PERSONA }] },
+        contents: hist,
+        generationConfig: { temperature: 0.9, topP: 0.95, maxOutputTokens: 2048 }
+      })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      rmTyp(); toast('❌ ' + (data.error?.message || 'Server xatosi')); hist.pop();
+    } else {
+      const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || '(Javob kelmadi)';
+      rmTyp(); addMsg('bot', reply);
+      hist.push({ role: 'model', parts: [{ text: reply }] });
+      if (hist.length > 40) hist = hist.slice(-40);
+    }
+  } catch (e) {
+    rmTyp(); toast('❌ Tarmoq xatosi: ' + e.message); hist.pop();
+  }
+
+  busy = false;
+  document.getElementById('sbtn').disabled = false;
+  document.getElementById('st').textContent = 'Tayyor';
+  document.getElementById('inp').focus();
+}
+</script>
+</body>
+</html>
